@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from models import Product, CartItem
 from typing import List
+from fastapi import Body
 
 app = FastAPI()
 
@@ -46,3 +47,17 @@ def add_to_cart(product_id: int):
     new_item = CartItem(product=product)
     cart.append(new_item)
     return new_item
+
+orders = []  # Simple in-memory list of orders (expand as needed)
+
+@app.post("/admin/products", response_model=Product)
+def admin_add_product(product: Product = Body(...)):
+    # Check if product with same id already exists
+    if any(p.id == product.id for p in products):
+        raise HTTPException(status_code=400, detail="Product ID already exists")
+    products.append(product)
+    return product
+
+@app.get("/admin/orders")
+def admin_get_orders():
+    return orders  # For now, just return the orders list
