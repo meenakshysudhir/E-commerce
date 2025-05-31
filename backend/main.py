@@ -1,12 +1,13 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
-from models import Product, CartItem
+from motor.motor_asyncio import AsyncIOMotorClient
 from typing import List
-from fastapi import Body
+from models import Product, CartItem
 
+# FastAPI App
 app = FastAPI()
 
-# Allow frontend (e.g., localhost:5173)
+# Enable CORS (for frontend like React)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Use specific origin in production
@@ -15,49 +16,81 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# In-memory storage
-products = [
-    Product(id=1, name="Smartphone", price=699, image="/iphone.jpg"),
-    Product(id=2, name="Headphones", price=199, image="/jblheadphones.jpg"),
-    Product(id=3, name="Laptop", price=1299, image="/legion.jpg"),
-    Product(id=4, name="Smartwatch", price=249, image="/smartwatch.jpg"),
-]
+# MongoDB Atlas Connection
+MONGO_URI = "mongodb+srv://uthara:uthara2004@cluster0.bzy1cax.mongodb.net/ecommerce?retryWrites=true&w=majority&appName=Cluster0"
+client = AsyncIOMotorClient(MONGO_URI)
+db = client["ecommerce"]
+product_collection = db["products"]
+cart_collection = db["cart"]
+order_collection = db["orders"]
 
-cart: List[CartItem] = []
+# Utility to clean MongoDB _id
+def clean_product(doc):
+    return {
+        "id": doc["id"],
+        "name": doc["name"],
+        "price": doc["price"],
+        "image": doc["image"]
+    }
 
+def clean_cart_item(doc):
+    return {
+        "product": clean_product(doc["product"]),
+        "quantity": doc["quantity"]
+    }
+
+# Routes
 @app.get("/products", response_model=List[Product])
-def get_products():
-    return products
+async def get_products():
+    docs = await product_collection.find().to_list(100)
+    return [clean_product(doc) for doc in docs]
 
 @app.get("/cart", response_model=List[CartItem])
-def get_cart():
-    return cart
+async def get_cart():
+    docs = await cart_collection.find().to_list(100)
+    return [clean_cart_item(doc) for doc in docs]
 
 @app.post("/cart/add", response_model=CartItem)
-def add_to_cart(product_id: int):
-    product = next((p for p in products if p.id == product_id), None)
+async def add_to_cart(product_id: int):
+    product = await product_collection.find_one({"id": product_id})
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
-    for item in cart:
-        if item.product.id == product_id:
-            item.quantity += 1
-            return item
+    existing = await cart_collection.find_one({"product.id": product_id})
+    if existing:
+        await cart_collection.update_one(
+            {"product.id": product_id},
+            {"$inc": {"quantity": 1}}
+        )
+        updated = await cart_collection.find_one({"product.id": product_id})
+        return clean_cart_item(updated)
 
-    new_item = CartItem(product=product)
-    cart.append(new_item)
-    return new_item
-
-orders = []  # Simple in-memory list of orders (expand as needed)
+    new_item = {
+        "product": product,
+        "quantity": 1
+    }
+    await cart_collection.insert_one(new_item)
+    return clean_cart_item(new_item)
 
 @app.post("/admin/products", response_model=Product)
-def admin_add_product(product: Product = Body(...)):
-    # Check if product with same id already exists
-    if any(p.id == product.id for p in products):
+async def admin_add_product(product: Product = Body(...)):
+    if await product_collection.find_one({"id": product.id}):
         raise HTTPException(status_code=400, detail="Product ID already exists")
-    products.append(product)
+    await product_collection.insert_one(product.dict())
     return product
+@app.get("/admin/products", response_model=List[Product])
+async def getAllProducts():
+    products = await product_collection.find().to_list(100)
+    return [clean_product(p) for p in products]
 
+    
 @app.get("/admin/orders")
-def admin_get_orders():
-    return orders  # For now, just return the orders list
+async def admin_get_orders():
+    orders = await order_collection.find().to_list(100)
+    return orders
+
+# for getting all products added by the admin
+@app.get("/products", response_model=List[Product])
+async def get_products():
+    products = await product_collection.find().to_list(100)
+    return [clean_product(p) for p in products]
