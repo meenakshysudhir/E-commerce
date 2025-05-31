@@ -78,12 +78,12 @@ async def admin_add_product(product: Product = Body(...)):
         raise HTTPException(status_code=400, detail="Product ID already exists")
     await product_collection.insert_one(product.dict())
     return product
-@app.get("/admin/products", response_model=List[Product])
-async def getAllProducts():
-    products = await product_collection.find().to_list(100)
-    return [clean_product(p) for p in products]
+# @app.get("/admin/products", response_model=List[Product])
+# async def getAllProducts():
+#     products = await product_collection.find().to_list(100)
+#     return [clean_product(p) for p in products]
 
-    
+
 @app.get("/admin/orders")
 async def admin_get_orders():
     orders = await order_collection.find().to_list(100)
