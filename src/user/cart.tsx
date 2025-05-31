@@ -17,6 +17,7 @@ type CartItem = {
 
 export default function CartPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [message, setMessage] = useState<string>("");
 
   useEffect(() => {
     axios
@@ -43,6 +44,38 @@ export default function CartPage() {
     (sum, item) => sum + item.product.price * item.quantity,
     0
   );
+
+  const handleCheckout = async () => {
+    if (cart.length === 0) {
+      setMessage("Your cart is empty!");
+      return;
+    }
+  
+    // Send product id, name, quantity, unit price, and total amount
+    const orderData = cart.map((item) => ({
+      product_id: item.product.id,
+      product_name: item.product.name,
+      quantity: item.quantity,
+      unit_price: item.product.price,
+      total_amount: item.product.price * item.quantity,
+    }));
+
+    try {
+      const response = await axios.post(
+        "http://127.0.0.1:8000/checkout",
+        orderData,
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+      setMessage("Order placed successfully!");
+      setCart([]); // clear cart after successful checkout (optional)
+    } catch (error: any) {
+      setMessage(
+        error.response?.data?.detail || "Checkout failed. Please try again."
+      );
+    }
+  };
 
   return (
     <div className="max-w-5xl mx-auto p-6 md:p-10">
@@ -114,10 +147,25 @@ export default function CartPage() {
             <h2 className="text-2xl font-bold text-gray-800">
               Total: ₹{totalPrice.toLocaleString()}
             </h2>
-            <button className="mt-4 sm:mt-0 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl text-lg font-semibold transition-all">
+            <button
+              onClick={handleCheckout}
+              className="mt-4 sm:mt-0 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl text-lg font-semibold transition-all"
+            >
               Proceed to Checkout
             </button>
           </div>
+
+          {message && (
+            <p
+              className={`mt-6 text-center ${
+                message.includes("successfully")
+                  ? "text-green-600"
+                  : "text-red-600"
+              }`}
+            >
+              {message}
+            </p>
+          )}
         </>
       )}
     </div>

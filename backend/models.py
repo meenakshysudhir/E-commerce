@@ -1,5 +1,7 @@
-from pydantic import BaseModel
-from typing import Optional
+from pydantic import BaseModel,Field
+from typing import Optional,List
+from datetime import datetime
+
 
 class Product(BaseModel):
     id: int
@@ -8,6 +10,18 @@ class Product(BaseModel):
     quantity:int
     image: str
     
+class OrderItem(BaseModel):
+    product_id: int
+    product_name: str
+    quantity: int
+    unit_price: float
+    total_amount: float 
+
+class Order(BaseModel):
+    order_id: str = Field(..., alias="id")
+    items: List[OrderItem]
+    total_amount: float
+    created_at: datetime
 
 class CartItem(BaseModel):
     product: Product

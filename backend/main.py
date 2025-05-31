@@ -1,11 +1,12 @@
-from fastapi import FastAPI, HTTPException, Body
+from fastapi import FastAPI, HTTPException, Body,Request
 from fastapi.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
-from typing import List
-from models import Product, CartItem,ProductIdRequest
+
+from models import Product, CartItem,ProductIdRequest,OrderItem,Order
 import cloudinary
 import cloudinary.uploader
-
+from datetime import datetime
+from typing import List
 
 # Configuration       
 cloudinary.config( 
@@ -51,6 +52,11 @@ def clean_cart_item(doc):
         "quantity": doc["quantity"]
     }
 
+# To simulate DB, use in-memory list
+orders_db: List[Order] = []
+order_counter = 1  # simple incremental order ID
+
+
 # Routes
 @app.get("/products", response_model=List[Product])
 async def get_products():
@@ -86,12 +92,7 @@ async def add_to_cart(item: ProductIdRequest):
     await cart_collection.insert_one(new_item)
     return clean_cart_item(new_item)
 
-# @app.post("/admin/products", response_model=Product)
-# async def admin_add_product(product: Product = Body(...)):
-#     if await product_collection.find_one({"id": product.id}):
-#         raise HTTPException(status_code=400, detail="Product ID already exists")
-#     await product_collection.insert_one(product.dict())
-#     return product
+
 
 #Admin adding new products
 @app.post("/admin/products", response_model=Product)
@@ -122,8 +123,37 @@ async def admin_get_orders():
     orders = await order_collection.find().to_list(100)
     return orders
 
-# for getting all products added by the admin
-@app.get("/products", response_model=List[Product])
-async def get_products():
-    products = await product_collection.find().to_list(100)
-    return [clean_product(p) for p in products]
+
+#user order
+
+@app.post("/checkout")
+async def create_order(items: List[OrderItem]):
+    if not items:
+        raise HTTPException(status_code=400, detail="Order cannot be empty")
+
+    # Calculate overall order total by summing total_amount from each item
+    total_order_amount = sum(item.total_amount for item in items)
+
+    order_dict = {
+        "items": [item.dict() for item in items],
+        "total_amount": total_order_amount,
+        "created_at": datetime.utcnow(),
+    }
+
+    result = await order_collection.insert_one(order_dict)
+    return {"message": "Order placed successfully", "order_id": str(result.inserted_id)}
+
+@app.get("/orders")
+async def get_all_orders():
+    orders_cursor = order_collection.find()
+    orders = []
+    
+    async for doc in orders_cursor:
+        orders.append({
+            "order_id": str(doc["_id"]),
+            "items": doc["items"],
+            "total_amount": doc["total_amount"],
+            "created_at": doc["created_at"]
+        })
+    
+    return orders
