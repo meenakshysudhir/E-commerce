@@ -1,38 +1,34 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Trash2 } from "lucide-react";
+import axios from "axios";
 
-type CartItem = {
+type Product = {
   id: number;
   name: string;
   price: number;
-  quantity: number;
+  quantity: number;  // stock quantity from backend (can be ignored here)
   image: string;
 };
 
-const initialCartItems: CartItem[] = [
-  {
-    id: 1,
-    name: "Wireless Headphones",
-    price: 2499,
-    quantity: 1,
-    image: "https://via.placeholder.com/80?text=Headphones",
-  },
-  {
-    id: 2,
-    name: "Smartwatch",
-    price: 4999,
-    quantity: 2,
-    image: "https://via.placeholder.com/80?text=Smartwatch",
-  },
-];
+type CartItem = {
+  product: Product;
+  quantity: number;  // quantity in the cart
+};
 
 export default function CartPage() {
-  const [cart, setCart] = useState<CartItem[]>(initialCartItems);
+  const [cart, setCart] = useState<CartItem[]>([]);
+
+  useEffect(() => {
+    axios
+      .get<CartItem[]>("http://127.0.0.1:8000/cart")
+      .then((res) => setCart(res.data))
+      .catch((err) => console.error("Failed to fetch:", err));
+  }, []);
 
   const updateQuantity = (id: number, amount: number) => {
     setCart((prev) =>
       prev.map((item) =>
-        item.id === id
+        item.product.id === id
           ? { ...item, quantity: Math.max(1, item.quantity + amount) }
           : item
       )
@@ -40,11 +36,11 @@ export default function CartPage() {
   };
 
   const removeItem = (id: number) => {
-    setCart((prev) => prev.filter((item) => item.id !== id));
+    setCart((prev) => prev.filter((item) => item.product.id !== id));
   };
 
   const totalPrice = cart.reduce(
-    (sum, item) => sum + item.price * item.quantity,
+    (sum, item) => sum + item.product.price * item.quantity,
     0
   );
 
@@ -61,28 +57,28 @@ export default function CartPage() {
           <div className="space-y-6">
             {cart.map((item) => (
               <div
-                key={item.id}
+                key={item.product.id}
                 className="flex flex-col md:flex-row items-center justify-between bg-white p-5 rounded-2xl shadow-sm border border-gray-100 gap-6"
               >
                 <div className="flex items-center gap-5 w-full md:w-2/3">
                   <img
-                    src={item.image}
-                    alt={item.name}
+                    src={item.product.image}
+                    alt={item.product.name}
                     className="w-24 h-24 rounded-xl object-cover border"
                   />
                   <div>
                     <h2 className="text-lg font-semibold text-gray-900">
-                      {item.name}
+                      {item.product.name}
                     </h2>
                     <p className="text-sm text-gray-500">
-                      ₹{item.price.toLocaleString()} each
+                      ₹{item.product.price.toLocaleString()} each
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-4">
                   <button
-                    onClick={() => updateQuantity(item.id, -1)}
+                    onClick={() => updateQuantity(item.product.id, -1)}
                     className="w-8 h-8 text-lg rounded-full bg-gray-200 hover:bg-gray-300"
                   >
                     −
@@ -91,7 +87,7 @@ export default function CartPage() {
                     {item.quantity}
                   </span>
                   <button
-                    onClick={() => updateQuantity(item.id, 1)}
+                    onClick={() => updateQuantity(item.product.id, 1)}
                     className="w-8 h-8 text-lg rounded-full bg-gray-200 hover:bg-gray-300"
                   >
                     +
@@ -100,10 +96,10 @@ export default function CartPage() {
 
                 <div className="flex items-center gap-5">
                   <p className="text-md font-semibold text-green-600">
-                    ₹{(item.price * item.quantity).toLocaleString()}
+                    ₹{(item.product.price * item.quantity).toLocaleString()}
                   </p>
                   <button
-                    onClick={() => removeItem(item.id)}
+                    onClick={() => removeItem(item.product.id)}
                     className="text-red-500 hover:text-red-600"
                     title="Remove item"
                   >

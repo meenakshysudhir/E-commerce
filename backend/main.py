@@ -2,7 +2,18 @@ from fastapi import FastAPI, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 from typing import List
-from models import Product, CartItem
+from models import Product, CartItem,ProductIdRequest
+import cloudinary
+import cloudinary.uploader
+
+
+# Configuration       
+cloudinary.config( 
+    cloud_name = "dftlk2vjb", 
+    api_key = "759728372863946", 
+    api_secret = "kSbb3-grjE1erE3GkAE9f6FBtG4", # Click 'View API Keys' above to copy your API secret
+    secure=True
+)
 
 # FastAPI App
 app = FastAPI()
@@ -30,7 +41,8 @@ def clean_product(doc):
         "id": doc["id"],
         "name": doc["name"],
         "price": doc["price"],
-        "image": doc["image"]
+        "image": doc["image"],
+        "quantity":doc["quantity"   ]
     }
 
 def clean_cart_item(doc):
@@ -50,8 +62,10 @@ async def get_cart():
     docs = await cart_collection.find().to_list(100)
     return [clean_cart_item(doc) for doc in docs]
 
+#add to cart
 @app.post("/cart/add", response_model=CartItem)
-async def add_to_cart(product_id: int):
+async def add_to_cart(item: ProductIdRequest):
+    product_id = item.product_id
     product = await product_collection.find_one({"id": product_id})
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
@@ -72,16 +86,35 @@ async def add_to_cart(product_id: int):
     await cart_collection.insert_one(new_item)
     return clean_cart_item(new_item)
 
+# @app.post("/admin/products", response_model=Product)
+# async def admin_add_product(product: Product = Body(...)):
+#     if await product_collection.find_one({"id": product.id}):
+#         raise HTTPException(status_code=400, detail="Product ID already exists")
+#     await product_collection.insert_one(product.dict())
+#     return product
+
+#Admin adding new products
 @app.post("/admin/products", response_model=Product)
 async def admin_add_product(product: Product = Body(...)):
     if await product_collection.find_one({"id": product.id}):
         raise HTTPException(status_code=400, detail="Product ID already exists")
-    await product_collection.insert_one(product.dict())
-    return product
-# @app.get("/admin/products", response_model=List[Product])
-# async def getAllProducts():
-#     products = await product_collection.find().to_list(100)
-#     return [clean_product(p) for p in products]
+
+    # Fix Google Drive URL to direct download link
+    if "drive.google.com/file/d/" in product.image:
+        file_id = product.image.split("/d/")[1].split("/")[0]
+        product.image = f"https://drive.google.com/uc?export=download&id={file_id}"
+
+    try:
+        upload_result = cloudinary.uploader.upload(product.image)
+        cloudinary_url = upload_result.get("secure_url")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Image upload failed: {str(e)}")
+
+    product_dict = product.dict()
+    product_dict["image"] = cloudinary_url
+
+    await product_collection.insert_one(product_dict)
+    return product_dict
 
 
 @app.get("/admin/orders")
