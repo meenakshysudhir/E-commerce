@@ -1,22 +1,64 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import EShoppingWebsite from "./user/user";
-import Cart from "./user/cart";
-import AdminPage from "./admin/admin";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import Signup from "./signup";
+import Login from "./login";
+import AdminLogin from "./adminLogin";
+import User from "./user/user";
+import Admin from "./admin/admin";
+// import AdminDashboard from "./pages/AdminDashboard";
+// import UserDashboard from "./pages/UserDashboard";
+import UserNav from "./components/ui/usernav";
+import AdminNav from "./components/ui/adminnav";
 import Orders from "./admin/orders";
-import Navbar from "./components/ui/navbar";
+import Cart from "./user/cart";
 
-function App() {
+const App = () => {
   return (
-    <BrowserRouter>
-      <Navbar />
+    <Router>
       <Routes>
-        <Route path="/user" element={<EShoppingWebsite />} />
-        <Route path="/admin/add" element={<AdminPage />} />
-        <Route path="/admin/orders" element={<Orders />} />
-        <Route path="/user/cart" element={<Cart />} />
+        <Route path="/" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/admin/login" element={<AdminLogin />} />
+
+        <Route
+          path="/user"
+          element={
+            <>
+              <UserNav />
+              <User />
+              <Cart />
+            </>
+          }
+        />
+        <Route
+          path="/user/cart"
+          element={
+            <>
+              <Cart />
+            </>
+          }
+        />
+
+        <Route
+          path="/admin/dashboard"
+          element={
+            <>
+              <AdminNav />
+              <Admin />
+            </>
+          }
+        />
+        <Route
+          path="/admin/orders"
+          element={
+            <>
+              <AdminNav />
+              <Orders />
+            </>
+          }
+        />
       </Routes>
-    </BrowserRouter>
+    </Router>
   );
-}
+};
 
 export default App;
