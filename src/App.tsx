@@ -25,7 +25,7 @@ const App = () => {
             <>
               <UserNav />
               <User />
-              <Cart />
+          
             </>
           }
         />
@@ -33,6 +33,8 @@ const App = () => {
           path="/user/cart"
           element={
             <>
+                          <UserNav />
+
               <Cart />
             </>
           }

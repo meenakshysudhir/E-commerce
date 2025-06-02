@@ -20,11 +20,9 @@ export default function ProductForm() {
 
   const [message, setMessage] = useState<string>("");
 
-  // Handle input changes
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const { name, value } = e.target;
 
-    // For numeric fields convert to number or empty string
     if (["id", "price", "quantity"].includes(name)) {
       setFormData(prev => ({
         ...prev,
@@ -38,11 +36,9 @@ export default function ProductForm() {
     }
   }
 
-  // On form submit
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    // Basic validation: all fields required
     if (
       formData.id === "" ||
       !formData.name ||
@@ -58,74 +54,79 @@ export default function ProductForm() {
       const response = await axios.post("http://localhost:8000/admin/products", formData, {
         headers: { "Content-Type": "application/json" },
       });
-      setMessage(`Product added: ${response.data.name}`);
+      setMessage(`✅ Product added: ${response.data.name}`);
       setFormData({ id: "", name: "", price: "", image: "", quantity: "" });
     } catch (error: any) {
       setMessage(
-        error.response?.data?.detail || "Failed to add product. Try again."
+        error.response?.data?.detail || "❌ Failed to add product. Try again."
       );
     }
   }
 
   return (
-    <div className="max-w-md mx-auto p-6 border rounded shadow">
-      <h2 className="text-2xl mb-4 font-semibold">Add New Product</h2>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <input
-          type="number"
-          name="id"
-          placeholder="Product ID"
-          value={formData.id}
-          onChange={handleChange}
-          required
-          className="border p-2 rounded"
-        />
-        <input
-          type="text"
-          name="name"
-          placeholder="Product Name"
-          value={formData.name}
-          onChange={handleChange}
-          required
-          className="border p-2 rounded"
-        />
-        <input
-          type="number"
-          name="price"
-          placeholder="Price"
-          step="0.01"
-          value={formData.price}
-          onChange={handleChange}
-          required
-          className="border p-2 rounded"
-        />
-        <input
-          type="text"
-          name="image"
-          placeholder="Image URL"
-          value={formData.image}
-          onChange={handleChange}
-          required
-          className="border p-2 rounded"
-        />
-        <input
-          type="number"
-          name="quantity"
-          placeholder="Quantity"
-          value={formData.quantity}
-          onChange={handleChange}
-          required
-          className="border p-2 rounded"
-        />
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+      <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-md">
+        <h2 className="text-3xl font-bold mb-6 text-center text-gray-800">Add New Product</h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <input
+            type="number"
+            name="id"
+            placeholder="Product ID"
+            value={formData.id}
+            onChange={handleChange}
+            className="w-full border border-gray-300 p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <input
+            type="text"
+            name="name"
+            placeholder="Product Name"
+            value={formData.name}
+            onChange={handleChange}
+            className="w-full border border-gray-300 p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <input
+            type="number"
+            name="price"
+            placeholder="Price"
+            step="0.01"
+            value={formData.price}
+            onChange={handleChange}
+            className="w-full border border-gray-300 p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <input
+            type="text"
+            name="image"
+            placeholder="Image URL"
+            value={formData.image}
+            onChange={handleChange}
+            className="w-full border border-gray-300 p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <input
+            type="number"
+            name="quantity"
+            placeholder="Quantity"
+            value={formData.quantity}
+            onChange={handleChange}
+            className="w-full border border-gray-300 p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
 
-        <button
-          type="submit"
-          className="bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
-        >
-          Add Product
-        </button>
-      </form>
-      {message && <p className="mt-4 text-center">{message}</p>}
+          <button
+            type="submit"
+            className="w-full bg-blue-600 text-white py-3 rounded-md font-semibold hover:bg-blue-700 transition duration-200"
+          >
+            Add Product
+          </button>
+        </form>
+        {message && (
+          <p
+            className={`mt-4 text-center font-medium ${
+              message.startsWith("✅") ? "text-green-600" : "text-red-600"
+            }`}
+          >
+            {message}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
