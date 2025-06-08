@@ -24,7 +24,7 @@ export default function CartPage() {
 
   useEffect(() => {
     axios
-      .get<CartItem[]>("http://127.0.0.1:8000/cart")
+      .get<CartItem[]>("http://localhost:8000/cart")
       .then((res) => {
         setCart(res.data);
         setIsLoading(false);
@@ -73,7 +73,7 @@ export default function CartPage() {
     }));
 
     try {
-      await axios.post("http://127.0.0.1:8000/checkout", orderData, {
+      await axios.post("http://localhost:8000/checkout", orderData, {
         headers: { "Content-Type": "application/json" },
       });
       setMessage("Order placed successfully! 🎉");

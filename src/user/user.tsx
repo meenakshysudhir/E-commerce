@@ -21,7 +21,7 @@ const StarRating = ({ rating }: { rating: number }) => {
       {[...Array(full)].map((_, i) => (
         <Star key={`full-${i}`} fill="currentColor" stroke="none" className="w-4 h-4" />
       ))}
-      {half && <StarHalf key="half\" fill="currentColor\" stroke="none\" className="w-4 h-4" />}
+      {half && <StarHalf key="half" fill="currentColor" stroke="none" className="w-4 h-4" />}
       {[...Array(empty)].map((_, i) => (
         <Star key={`empty-${i}`} className="w-4 h-4 text-gray-300" />
       ))}
@@ -38,7 +38,7 @@ const User = () => {
 
   useEffect(() => {
     axios
-      .get("http://127.0.0.1:8000/products")
+      .get("http://localhost:8000/products")
       .then((res) => {
         const ratedProducts = res.data.map((product: Product) => ({
           ...product,
@@ -60,7 +60,7 @@ const User = () => {
 
   const addToCart = async (productId: number) => {
     try {
-      await axios.post("http://127.0.0.1:8000/cart/add", { product_id: productId });
+      await axios.post("http://localhost:8000/cart/add", { product_id: productId });
       // Show success animation or toast
       alert("Product added to cart!");
     } catch (err) {
